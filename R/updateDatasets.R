@@ -10,7 +10,7 @@ updateDatasets <- function(){
 	funcdir <- file.path(root,"Py")
 	rdatdir <- file.path(root,"rdata")
 	# Call getSCellDatasets() to collect all available datasets.
-	cmd <- file.path(funcdir,"getSCellDatasets.py")
+	cmd <- file.path(funcdir,"getDatasets.py")
 	json_file <- system(cmd,intern=TRUE,
 			    ignore.stdout=FALSE,ignore.stderr=FALSE)
 	datasets <- fromJSON(paste(readLines(json_file), collapse=""))
