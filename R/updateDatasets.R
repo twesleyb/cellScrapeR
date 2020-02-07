@@ -15,6 +15,8 @@ updateDatasets <- function(){
 			    ignore.stdout=FALSE,ignore.stderr=FALSE)
 	datasets <- fromJSON(paste(readLines(json_file,warn=FALSE), collapse=""))
 	unlink(json_file)
+	 # Un-nest list.
+	datasets <- lapply(datasets,function(x) unlist(x,recursive=FALSE))
 	# Save to RData.
 	myfile <- gsub("json","RData",json_file)
 	saveRDS(datasets,myfile)
