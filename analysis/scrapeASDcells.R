@@ -12,6 +12,7 @@ devtools::load_all()
 here <- getwd()
 root <- dirname(here)
 datadir <- file.path(root,"data")
+rdatdir <- file.path(root,"rdata")
 
 # urls to data
 urls <- list(
@@ -33,7 +34,7 @@ names(submeta) <- unique(meta$diagnosis)
 df <- subset(meta,meta$diagnosis == "Control")
 
 # Convert human genes to mouse.
-msEntrez <- getHomologs(genes,taxid=10090)
+msEntrez <- getHomologs(df$genes,taxid=10090)
 df$msEntrez <- msEntrez 
 
 # Collect cell clusters from control group.
@@ -44,32 +45,37 @@ myfile <- file.path(datadir,"Velmeshev_Cell_Clusters.gmt")
 write_gmt(cell_clusters,urls$data,myfile)
 
 # Create anRichment geneSet collection.
-createGeneSet <- function(genes) {
+createGeneSet <- function(genes,cluster) {
+	suppressPackageStartupMessages({
+	require(anRichment)
+	})
        geneSet <- newGeneSet(geneEntrez = genes,
 			      geneEvidence = "IEA",
 			      geneSource = "Velmeshev et al., 2020",
-			      ID = pathway_name, # diseaseId
-			      name = pathway_name, # Shortened disease name
-			      description = " literature",
-			      source = "httpsneLists/data",
+			      ID = cluster, # diseaseId
+			      name = cluster, # Shortened disease name
+			      description = "cell clusters identified by Velmeshev et al.",
+			      source = urls$data,
 			      organism = "mouse",
-			      internalClassification = "DBD",
-			      groups = "CompiledDBD",
+			      internalClassification = "ASDcells",
+			      groups = "UCSCcells",
 			      lastModified = Sys.Date())
 return(geneSet)
 }
 
 # Loop to build gene sets.
 geneSets <- lapply(seq_along(cell_clusters),function(x) {
-			       createGeneSet(disease_groups[[x]],names(disease_groups)[x])
+			       createGeneSet(cell_clusters[[x]],names(cell_clusters)[x])
 			      })
 
 # Define group.
-PLgroup <- newGroup(name = "CompiledDBD", 
-		   description = "Compiled DBD genes from several databases and the literature.",
-		   source = "https://github.com/twesleyb/geneLists/data")
+PLgroup <- newGroup(name = "UCSCcells", 
+		   description = "single cell data",
+		   source = urls$data)
 
 # Combine go collection.
-DBDcollection <- newCollection(dataSets=geneSetList,groups=list(PLgroup))
+cellCollection <- newCollection(dataSets=geneSets,groups=list(PLgroup))
 
 # Save.
+myfile <- file.path(rdatdir,"ASDcellCollection.RData")
+saveRDS(cellCollection,myfile)
