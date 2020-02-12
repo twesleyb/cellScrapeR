@@ -1,9 +1,11 @@
 #!/usr/bin/env Rscript
 
 # imports
-library(data.table)
-library(dplyr)
-library(getPPIs)
+suppressPackageStartupMessages({
+	library(data.table)
+	library(dplyr)
+	library(getPPIs)
+})
 
 # load functions
 devtools::load_all()
@@ -27,27 +29,32 @@ meta <- getMeta(urls$meta)
 json <- getJSON(urls$json)
 
 # Split data into Control and ASD diagnoses.
-submeta <- meta %>% group_by(diagnosis) %>% group_split()
-names(submeta) <- unique(meta$diagnosis)
+meta_list <- meta %>% group_by(diagnosis) %>% group_split()
+names(meta_list) <- unique(meta$diagnosis)
 
 # get control data.
-df <- subset(meta,meta$diagnosis == "Control")
+submeta <- meta_list$Control
 
 # Convert human genes to mouse.
-msEntrez <- getHomologs(df$genes,taxid=10090)
-df$msEntrez <- msEntrez 
+msEntrez <- getHomologs(submeta$genes,taxid=10090)
+submeta$msEntrez <- msEntrez 
+
+# Remove NAs.
+out <- is.na(submeta$msEntrez)
+nout <- sum(out)
+submeta <- submeta[!out,]
 
 # Collect cell clusters from control group.
-cell_clusters <- split(df$msEntrez,df$cluster)
+cell_clusters <- split(submeta$msEntrez,submeta$cluster)
 
 # Write as gmt.
-myfile <- file.path(datadir,"Velmeshev_Cell_Clusters.gmt")
-write_gmt(cell_clusters,urls$data,myfile)
+#myfile <- file.path(datadir,"Velmeshev_Cell_Clusters.gmt")
+#write_gmt(cell_clusters,urls$data,myfile)
 
 # Create anRichment geneSet collection.
 createGeneSet <- function(genes,cluster) {
 	suppressPackageStartupMessages({
-	require(anRichment)
+		require(anRichment)
 	})
        geneSet <- newGeneSet(geneEntrez = genes,
 			      geneEvidence = "IEA",
@@ -77,5 +84,5 @@ PLgroup <- newGroup(name = "UCSCcells",
 cellCollection <- newCollection(dataSets=geneSets,groups=list(PLgroup))
 
 # Save.
-myfile <- file.path(rdatdir,"ASDcellCollection.RData")
+myfile <- file.path(rdatdir,"Velmeshev_ASD_Cellcollection.RData")
 saveRDS(cellCollection,myfile)
