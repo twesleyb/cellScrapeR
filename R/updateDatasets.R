@@ -21,5 +21,3 @@ updateDatasets <- function(){
 	myfile <- gsub("json","RData",json_file)
 	saveRDS(datasets,myfile)
 }
-
-updateDatasets()
