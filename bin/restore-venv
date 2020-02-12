@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# Creating a virtual environment from a environment.yml file.
+conda env create -f ../venv.yml
