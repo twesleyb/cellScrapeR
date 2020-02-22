@@ -1,3 +1,7 @@
+# Files and directories that git will ignore.
+
+downloads/
+
 # History files
 .Rhistory
 .Rapp.history
