@@ -1,43 +1,27 @@
 #!/usr/bin/env python3
 
 import os
+import loompy
+import pandas as pd
 from os.path import dirname, join
 
+# Directories.
 here = os.getcwd()
 root = dirname(here)
 downdir = join(root,"downloads")
 
-
-import loompy
-
+# Load the data.
 myfile = join(downdir,"l5_all.agg.loom")
-ds = loompy.connect(myfile)
+ds = loompy.connect(myfile,mode='r',validate=False)
 
-ty_list =open('tylers_list.txt','r')
-lines = ty_list.read().splitlines()
-ty_list.close()
+# Scrape all of the data.
+clusters = list(ds.ca['ClusterName'])
+genes = ds.ra['Accession']
 
-exp_dat = [ds.ca.ClusterName]
-errors = []
+# List comprehension to get expression data for every gene.
+# Not sure why it has to be done like this...
+data = [ds[ds.ra.Accession == gene,:][0] for gene in genes]
 
-count=0
-accsn = []
-for i in lines:
-    try:
-        exp_dat.append(ds[ds.ra["Accession"] == i,:][0])
-        accsn.append(i)
-    except:
-        errors.append(i)
-    count += 1
-    print(count)
-    
-import pandas as pd
-
-df= pd.DataFrame(exp_dat,columns=exp_dat.pop(0))
-df['gene'] = accsn
-
-cols = list(df)
-cols.insert(0, cols.pop(cols.index('gene')))
-df = df.loc[:, cols]
-
-df.to_csv('tyler_wbmatrix.csv', sep=',')
+# Create a df and write to csv.
+df = pd.DataFrame(data,index=genes,columns=clusters)
+df.to_csv('Expression_Matrix.csv')
