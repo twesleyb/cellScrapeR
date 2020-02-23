@@ -20,15 +20,14 @@ if not isfile(loom_file): wget.download(url,out=downdir)
 # Load the data.
 ds = loompy.connect(loom_file,mode='r',validate=False)
 
-# Scrape all of the data.
+# Get clusters, accession ids, gene symbols, and cell marker genes.
 clusters = list(ds.ca['ClusterName'])
 gene_ids = ds.ra['Accession']
 genes = ds.ra['Gene']
-
-# Scrape cell markers.
 cell_markers = ds.ca['MarkerGenes']
 
-# List comprehension to get expression data for every gene.
+# Scrape the expression data.
+# Use list comprehension to get expression data for every gene.
 # Not sure why it has to be done like this...
 data = [ds[ds.ra.Accession == gene_id,:][0] for gene_id in gene_ids]
 
