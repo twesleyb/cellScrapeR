@@ -1,10 +1,5 @@
 #!/usr/bin/env Rscript
-# Perform bicor.
-bicor <- function(path2adjm){
-	adjm <- read.csv(path2adjm)
-	cormat <- WGCNA::bicor(adjm)
-	return(dm)
-}
+# Perform bicor of Mouse brain cell cluster matrix.
 
 # Load the data.
 adjm <- read.csv('Expression_Matrix.csv')
@@ -13,6 +8,7 @@ adjm$X <- NULL
 adjm <- as.matrix(adjm)
 
 # Perform bicor.
+message("Performing bicor!")
 cormat <- WGCNA::bicor(t(adjm))
 
 # Save to file.
