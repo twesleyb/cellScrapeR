@@ -8,11 +8,12 @@
 # Kmeans clustering is performed with k=N cell clusters (265).
 
 ## User parameters:
-n <- "all" # Which genes to analyze? Or a number of random genes to analyze.
+n <- 1000 # Which genes to analyze? 'All' or a number of random genes to analyze.
 ## Other parameters for clustering:
 nstart <- 10
 iter.max <- 1000
 alg <- c("Hartigan-Wong", "Lloyd", "Forgy","MacQueen")[1]
+trace <- 1
 
 # Imports.
 suppressPackageStartupMessages({
@@ -65,12 +66,17 @@ message("Imputing missing values with KNN algorithm...\n")
 adjm <- quiet({impute.knn(adjm)$data})
 
 # Perform bicor.
-message("Analyzing correlations between genes with midweight bicorrelation...")
-cormat <- quiet({WGCNA::bicor(t(adjm))})
-
-# Save to file.
 myfile <- file.path(downdir,"Expression_Bicor_Matrix.csv")
-if (!file.exists(myfile)) { fwrite(as.data.table(cormat),myfile) }
+if (file.exists(myfile)) { 
+	# If we did it before, don't do it again.
+	message("Loading previously calculated bicor correlation matrix.")
+	cormat <- fread(myfile) 
+} else if (!file.exists(myfile)) {
+	# Calculate bicor matrix and save to file.
+	message("Computing correlations between genes with midweight bicorrelation...")
+	cormat <- quiet({WGCNA::bicor(t(adjm))})
+	fwrite(as.data.table(cormat),myfile)
+}
 
 # Which genes to analyze?
 if (n != "all") {
@@ -83,7 +89,7 @@ if (n != "all") {
 k <- n_clusters
 message(paste0("Performing kmeans clustering (k=",n_clusters,
 	      ") using the ",alg," algorithm...\n"))
-clusters <- kmeans(cormat[idx,idy], centers=k, iter.max, nstart, algorithm=alg)
+clusters <- kmeans(cormat[idx,idy], centers=k, iter.max, nstart, algorithm=alg,trace)
 
 # Extract clusters.
 partition <- clusters$cluster
