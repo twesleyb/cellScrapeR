@@ -8,8 +8,11 @@
 # Kmeans clustering is performed with k=N cell clusters (265).
 
 ## User parameters:
-#n <- "all" # Which genes to analyze? Or a number of random genes to analyze.
-n <- 1000 # Which genes to analyze? Or a number of random genes to analyze.
+n <- "all" # Which genes to analyze? Or a number of random genes to analyze.
+## Other parameters for clustering:
+nstart <- 10
+iter.max <- 1000
+alg <- c("Hartigan-Wong", "Lloyd", "Forgy","MacQueen")[1]
 
 # Imports.
 suppressPackageStartupMessages({
@@ -32,7 +35,6 @@ source(file.path(root,"R","quiet.R"))
 # Load the data.
 myfile <- file.path(downdir,'Expression_Matrix.csv')
 adjm <- read.csv(myfile)
-n_clusters <- ncol(adjm)
 
 # Handle duplicate rows (genes), by summing the duplicates.
 adjm <- adjm %>% group_by(X) %>% summarize_all(sum)
@@ -42,32 +44,8 @@ adjm$X <- NULL
 adjm <- as.matrix(adjm)
 rownames(adjm) <- genes
 
-# Load Ensembl-Gene Symbol map.
-myfile <- file.path(downdir,'Gene_Ensembl_Map.csv')
-gene_map <- fread(myfile,drop=1,header=TRUE)
-
-# Load cell cluster markers.
-myfile <- file.path(downdir,'Cell_Cluster_Markers.csv')
-markers <- fread(myfile,drop=1,header=TRUE)
-
-# Collect cell markers as a named list.
-markers <- markers  %>% group_by(Cluster) %>% group_split() 
-cell_markers <- lapply(markers,function(x) unlist(strsplit(x$Genes," ")))
-names(cell_markers) <- sapply(markers,function(x) x$Cluster)
-
-# Map genes to Ensembl Ids.
-cell_markers <- lapply(cell_markers,function(x) {
-			       idx <- match(x,gene_map$Symbol)
-			       names(x) <- gene_map$Ensembl[idx]
-			       return(x)
-})
-
-# Coerce cell markers list to a named vector.
-cell_markers <- unlist(cell_markers)
-cell <- sapply(strsplit(names(cell_markers),"\\."),"[",1)
-gene <- sapply(strsplit(names(cell_markers),"\\."),"[",2)
-names(cell) <- gene
-cell_markers <- cell
+# Total number of cell type clusters.
+n_clusters <- ncol(adjm)
 
 # Remove genes with too many missing values from expression data.
 message("Removing genes with too many missing values...")
@@ -83,7 +61,7 @@ message(paste("... Number of genes that are expressed in less than 50%",
 message(paste("... Number of remaining genes:",nkeep))
 
 # Impute the remaining missing values as MNAR with KNN.
-message("Imputing missing values with KNN algorithm...")
+message("Imputing missing values with KNN algorithm...\n")
 adjm <- quiet({impute.knn(adjm)$data})
 
 # Perform bicor.
@@ -103,11 +81,8 @@ if (n != "all") {
 
 # Perform KNN mean clustering.
 k <- n_clusters
-nstart <- 1
-iter.max <- 10
-alg <- c("Hartigan-Wong", "Lloyd", "Forgy","MacQueen")[1]
 message(paste0("Performing kmeans clustering (k=",n_clusters,
-	      ") using the ",alg," algorithm..."))
+	      ") using the ",alg," algorithm...\n"))
 clusters <- kmeans(cormat[idx,idy], centers=k, iter.max, nstart, algorithm=alg)
 
 # Extract clusters.
