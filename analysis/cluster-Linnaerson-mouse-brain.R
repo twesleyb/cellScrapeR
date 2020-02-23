@@ -14,24 +14,29 @@ suppressPackageStartupMessages({
 })
 
 # Functions.
-suppressWarnings({ devtools::load_all() })
+#suppressWarnings({ devtools::load_all() })
 
 # Directories.
 here <- getwd()
 root <- dirname(here)
 downdir <- file.path(root,"downloads")
+datadir <- file.path(root,"data")
 
 # Load the data.
 myfile <- file.path(downdir,'Expression_Matrix.csv')
 adjm <- read.csv(myfile)
-rownames(adjm) <- adjm$X
+
+# Handle duplicate rows (genes), by summing the duplicates.
+adjm <- adjm %>% group_by(X) %>% summarize_all(sum)
+adjm <- as.data.table(adjm)
+genes <- adjm$X
 adjm$X <- NULL
 adjm <- as.matrix(adjm)
+rownames(adjm) <- genes
 
 # Load Ensembl-Gene Symbol map.
 myfile <- file.path(downdir,'Gene_Ensembl_Map.csv')
 gene_map <- fread(myfile,drop=1,header=TRUE)
-gene_map
 
 # Load cell cluster markers.
 myfile <- file.path(downdir,'Cell_Cluster_Markers.csv')
@@ -49,6 +54,7 @@ cell_markers <- lapply(cell_markers,function(x) {
 			       return(x)
 })
 
+# Coerce cell markers list to a named vector.
 cell_markers <- unlist(cell_markers)
 cell <- sapply(strsplit(names(cell_markers),"\\."),"[",1)
 gene <- sapply(strsplit(names(cell_markers),"\\."),"[",2)
@@ -60,19 +66,18 @@ percent_missing <- apply(adjm,1,function(x) sum(x==0)/length(x))
 out <- percent_missing > 0.5
 nout <- formatC(sum(out),big.mark=",")
 adjm <- adjm[!out,]
+nkeep <- formatC(nrow(adjm),big.mark=",")
 
 # Status report.
 message(paste("Number of genes that are expressed in less than 50%",
 	      "of cell clusters:",nout))
-message(paste("Number of remaining genes:",nrow(adjm)))
+message(paste("Number of remaining genes:",nkeep))
 
 # Impute the remaining missing values as MNAR with KNN.
 adjm <- impute.knn(adjm)$data
 
-# Perform bicor for a subset of genes.
-n <- 1000
-rand_genes <- sample(nrow(adjm),n)
-cormat <- WGCNA::bicor(t(adjm[rand_genes,]))
+# Perform bicor.
+cormat <- WGCNA::bicor(t(adjm))
 
 # Save to file.
 myfile <- file.path(downdir,"Expression_Bicor_Matrix.csv")
@@ -98,12 +103,9 @@ names(partition) <- colnames(cormat)
 cell_clusters <- split(partition,partition)
 names(cell_clusters) <- paste0("C",names(cell_clusters))
 
+# Save.
+mfyile <- file.path(datadir,"Linaerson_Mouse_Brain_Cell_Clusters.RData")
+saveRDS(cell_clusters,myfile)
+
 # All cell markers.
-all_markers <- unlist(lapply(cell_markers,names),use.names=FALSE)
-
-# How many cell markers were clustered?
-sum(names(partition) %in% all_markers)
-
-idx <- which(sapply(cell_clusters,function(x) sum(names(x) %in% all_markers))==2)
-subclust <- cell_clusters[idx]
-
+#all_markers <- unlist(lapply(cell_markers,names),use.names=FALSE)
