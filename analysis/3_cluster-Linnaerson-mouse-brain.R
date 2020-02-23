@@ -58,7 +58,7 @@ nkeep <- formatC(nrow(adjm),big.mark=",")
 # Status report.
 message(paste("... Number of genes that are expressed in less than 50%",
 	      "of cell clusters:",nout))
-message(paste("... Number of remaining genes:",nkeep))
+message(paste("... Number of remaining genes:",nkeep,"\n"))
 
 # Impute the remaining missing values as MNAR with KNN.
 message("Imputing missing values with KNN algorithm...\n")
