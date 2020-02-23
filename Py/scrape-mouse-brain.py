@@ -25,3 +25,13 @@ data = [ds[ds.ra.Accession == gene,:][0] for gene in genes]
 # Create a df and write to csv.
 df = pd.DataFrame(data,index=genes,columns=clusters)
 df.to_csv('Expression_Matrix.csv')
+
+# Calculate bicor in R.
+from pandas import read_csv
+cormat = read_csv('Expression_Bicor_Matrix.csv')
+
+
+
+
+
+
