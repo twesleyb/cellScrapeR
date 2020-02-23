@@ -13,7 +13,6 @@ n <- 1000 # Which genes to analyze? 'All' or a number of random genes to analyze
 nstart <- 10
 iter.max <- 1000
 alg <- c("Hartigan-Wong", "Lloyd", "Forgy","MacQueen")[1]
-trace <- 1
 
 # Imports.
 suppressPackageStartupMessages({
@@ -21,7 +20,6 @@ suppressPackageStartupMessages({
 	library(data.table)
 	library(dplyr)
 })
-
 
 # Directories.
 here <- getwd()
@@ -70,7 +68,8 @@ myfile <- file.path(downdir,"Expression_Bicor_Matrix.csv")
 if (file.exists(myfile)) { 
 	# If we did it before, don't do it again.
 	message("Loading previously calculated bicor correlation matrix.")
-	cormat <- fread(myfile) 
+	cormat <- as.matrix(fread(myfile))
+	rownames(cormat) <- colnames(cormat)
 } else if (!file.exists(myfile)) {
 	# Calculate bicor matrix and save to file.
 	message("Computing correlations between genes with midweight bicorrelation...")
@@ -89,7 +88,7 @@ if (n != "all") {
 k <- n_clusters
 message(paste0("Performing kmeans clustering (k=",n_clusters,
 	      ") using the ",alg," algorithm...\n"))
-clusters <- kmeans(cormat[idx,idy], centers=k, iter.max, nstart, algorithm=alg,trace)
+clusters <- kmeans(cormat[idx,idy], centers=k, iter.max, nstart, algorithm=alg)
 
 # Extract clusters.
 partition <- clusters$cluster
