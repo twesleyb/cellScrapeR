@@ -8,7 +8,7 @@
 # Kmeans clustering is performed with k=N cell clusters (265).
 
 ## User parameters:
-n <- 1000 # Which genes to analyze? 'All' or a number of random genes to analyze.
+n <- "all" # Which genes to analyze? 'All' or a number of random genes to analyze.
 ## Other parameters for clustering:
 nstart <- 10
 iter.max <- 1000
