@@ -19,10 +19,10 @@ suppressPackageStartupMessages({
 here <- getwd()
 root <- dirname(here)
 downdir <- file.path(root,"downloads")
-datadir <- file.path(root,"data")
+rdatdir <- file.path(root,"rdata")
 
 # Functions.
-#suppressWarnings({ devtools::load_all() })
+# Use quiet to suppress unwanted messages from bicor() and impute.knn().
 source(file.path(root,"R","quiet.R"))
 
 # Load the data.
@@ -84,20 +84,22 @@ adjm <- quiet({impute.knn(adjm)$data})
 
 # Perform bicor.
 message("Analyzing correlations between genes with midweight bicorrelation...")
-cormat <- WGCNA::bicor(t(adjm))
+cormat <- quiet({WGCNA::bicor(t(adjm))})
 
 # Save to file.
 myfile <- file.path(downdir,"Expression_Bicor_Matrix.csv")
 fwrite(as.data.table(cormat),myfile)
 
 # Perform KNN mean clustering.
+n <- 1000
+n_rand <- sample(ncol(cormat),n)
 k <- n_clusters
 nstart <- 1
 iter.max <- 10
 alg <- c("Hartigan-Wong", "Lloyd", "Forgy","MacQueen")[1]
-message(paste("Performing kmeans clustering (k=",n_clusters,
-	      ") using the",alg,"algorithm..."))
-clusters <- kmeans(cormat, centers=k, iter.max, nstart, algorithm=alg)
+message(paste0("Performing kmeans clustering (k=",n_clusters,
+	      ") using the ",alg," algorithm..."))
+clusters <- kmeans(cormat[n_rand,n_rand], centers=k, iter.max, nstart, algorithm=alg)
 
 # Extract clusters.
 partition <- clusters$cluster
@@ -108,8 +110,5 @@ cell_clusters <- split(partition,partition)
 names(cell_clusters) <- paste0("C",names(cell_clusters))
 
 # Save.
-mfyile <- file.path(datadir,"Linaerson_Mouse_Brain_Cell_Clusters.RData")
+mfyile <- file.path(rdatdir,"Linaerson_Mouse_Brain_Cell_Clusters.RData")
 saveRDS(cell_clusters,myfile)
-
-# All cell markers.
-#all_markers <- unlist(lapply(cell_markers,names),use.names=FALSE)
