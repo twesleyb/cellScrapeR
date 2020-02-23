@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+''' Scrape Linnaerson cell cluster data--including cell cluster markers and
+gene-ensembl mapping.
+'''
 
 # Imports.
 import os
@@ -17,7 +20,7 @@ url = "https://storage.googleapis.com/linnarsson-lab-loom/l5_all.agg.loom"
 loom_file = join(downdir,basename(url))
 if not isfile(loom_file): wget.download(url,out=downdir)
 
-# Load the data.
+# Connect to the loom data object.
 ds = loompy.connect(loom_file,mode='r',validate=False)
 
 # Get clusters, accession ids, gene symbols, and cell marker genes.
@@ -28,6 +31,7 @@ cell_markers = ds.ca['MarkerGenes']
 
 # Scrape the expression data.
 # Use list comprehension to get expression data for every gene.
+# FIXME: Maybe a loop with a progress bar would be helpful.
 # Not sure why it has to be done like this...
 data = [ds[ds.ra.Accession == gene_id,:][0] for gene_id in gene_ids]
 
