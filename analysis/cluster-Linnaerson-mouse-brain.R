@@ -1,10 +1,11 @@
 #!/usr/bin/env Rscript
 
-## Perform Kmeans clustering of mouse brain cells.
+## Perform Kmeans clustering of the mouse brain cell cluster dataset.
 ## Expression values are the log mean of a genes expression in that cell cluster.
-## Remove genes that are expressed in <50% of samples.
-## Impute missing values.
-## Additional normalization???
+## Duplicate rowws (genes) are summed.
+## Genes that are expressed in <50% of samples are removed.
+## Missing values are imputed with the KNN algorithm.
+## Kmeans clustering is performed with k=N cell clusters (265).
 
 # Imports.
 suppressPackageStartupMessages({
@@ -25,6 +26,7 @@ datadir <- file.path(root,"data")
 # Load the data.
 myfile <- file.path(downdir,'Expression_Matrix.csv')
 adjm <- read.csv(myfile)
+n_clusters <- ncol(adjm)
 
 # Handle duplicate rows (genes), by summing the duplicates.
 adjm <- adjm %>% group_by(X) %>% summarize_all(sum)
@@ -74,25 +76,24 @@ message(paste("Number of genes that are expressed in less than 50%",
 message(paste("Number of remaining genes:",nkeep))
 
 # Impute the remaining missing values as MNAR with KNN.
+message("Imputing missing values with KNN algorithm...")
 adjm <- impute.knn(adjm)$data
 
 # Perform bicor.
+message("Analyzing correlations between genes with midweight bicorrelation...")
 cormat <- WGCNA::bicor(t(adjm))
 
 # Save to file.
 myfile <- file.path(downdir,"Expression_Bicor_Matrix.csv")
-fwrite(cormat,myfile)
-
-# Load bicor expression matrix.
-myfile <- file.path(downdir,'Expression_Bicor_Matrix.csv')
-cormat <- fread(myfile)
-rownames(cormat) <- colnames(cormat)
+fwrite(as.data.table(cormat),myfile)
 
 # Perform KNN mean clustering.
-k <- ncol(adjm)
+k <- n_clusters
 nstart <- 1
 iter.max <- 10
 alg <- c("Hartigan-Wong", "Lloyd", "Forgy","MacQueen")[1]
+message(paste("Performing kmeans clustering (k=",n_clusters,
+	      ") using the",alg,"algorithm..."))
 clusters <- kmeans(cormat, centers=k, iter.max, nstart, algorithm=alg)
 
 # Extract clusters.
