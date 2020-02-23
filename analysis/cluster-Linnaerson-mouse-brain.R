@@ -14,14 +14,16 @@ suppressPackageStartupMessages({
 	library(dplyr)
 })
 
-# Functions.
-#suppressWarnings({ devtools::load_all() })
 
 # Directories.
 here <- getwd()
 root <- dirname(here)
 downdir <- file.path(root,"downloads")
 datadir <- file.path(root,"data")
+
+# Functions.
+#suppressWarnings({ devtools::load_all() })
+source(file.path(root,"R","quiet.R"))
 
 # Load the data.
 myfile <- file.path(downdir,'Expression_Matrix.csv')
@@ -64,6 +66,7 @@ names(cell) <- gene
 cell_markers <- cell
 
 # Remove genes with too many missing values from expression data.
+message("Removing genes with too many missing values...")
 percent_missing <- apply(adjm,1,function(x) sum(x==0)/length(x))
 out <- percent_missing > 0.5
 nout <- formatC(sum(out),big.mark=",")
@@ -71,13 +74,13 @@ adjm <- adjm[!out,]
 nkeep <- formatC(nrow(adjm),big.mark=",")
 
 # Status report.
-message(paste("Number of genes that are expressed in less than 50%",
+message(paste("... Number of genes that are expressed in less than 50%",
 	      "of cell clusters:",nout))
-message(paste("Number of remaining genes:",nkeep))
+message(paste("... Number of remaining genes:",nkeep))
 
 # Impute the remaining missing values as MNAR with KNN.
 message("Imputing missing values with KNN algorithm...")
-adjm <- impute.knn(adjm)$data
+adjm <- quiet({impute.knn(adjm)$data})
 
 # Perform bicor.
 message("Analyzing correlations between genes with midweight bicorrelation...")
