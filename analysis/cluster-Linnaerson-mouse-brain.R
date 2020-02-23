@@ -18,7 +18,7 @@ suppressWarnings({ devtools::load_all() })
 
 # Directories.
 here <- getwd()
-root <- getrd()
+root <- dirname(here)
 downdir <- file.path(root,"downloads")
 
 # Load the data.

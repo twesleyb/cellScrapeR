@@ -2,18 +2,23 @@
 
 # Imports.
 import os
+import wget
 import loompy
 import pandas as pd
-from os.path import dirname, join
+from os.path import isfile, dirname, basename, join
 
 # Directories.
 here = os.getcwd()
 root = dirname(here)
 downdir = join(root,"downloads")
 
+# Download the loom object.
+url = "https://storage.googleapis.com/linnarsson-lab-loom/l5_all.agg.loom"
+loom_file = join(downdir,basename(url))
+if not isfile(loom_file): wget.download(url,out=downdir)
+
 # Load the data.
-myfile = join(downdir,"l5_all.agg.loom")
-ds = loompy.connect(myfile,mode='r',validate=False)
+ds = loompy.connect(loom_file,mode='r',validate=False)
 
 # Scrape all of the data.
 clusters = list(ds.ca['ClusterName'])
