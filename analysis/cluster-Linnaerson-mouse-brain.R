@@ -1,11 +1,15 @@
 #!/usr/bin/env Rscript
 
-## Perform Kmeans clustering of the mouse brain cell cluster dataset.
-## Expression values are the log mean of a genes expression in that cell cluster.
-## Duplicate rowws (genes) are summed.
-## Genes that are expressed in <50% of samples are removed.
-## Missing values are imputed with the KNN algorithm.
-## Kmeans clustering is performed with k=N cell clusters (265).
+# Perform Kmeans clustering of the mouse brain cell cluster dataset.
+# Expression values are the log mean of a genes expression in that cell cluster.
+# Duplicate rowws (genes) are summed.
+# Genes that are expressed in <50% of samples are removed.
+# Missing values are imputed with the KNN algorithm.
+# Kmeans clustering is performed with k=N cell clusters (265).
+
+## User parameters:
+#n <- "all" # Which genes to analyze? Or a number of random genes to analyze.
+n <- 1000 # Which genes to analyze? Or a number of random genes to analyze.
 
 # Imports.
 suppressPackageStartupMessages({
@@ -88,27 +92,35 @@ cormat <- quiet({WGCNA::bicor(t(adjm))})
 
 # Save to file.
 myfile <- file.path(downdir,"Expression_Bicor_Matrix.csv")
-fwrite(as.data.table(cormat),myfile)
+if (!file.exists(myfile)) { fwrite(as.data.table(cormat),myfile) }
+
+# Which genes to analyze?
+if (n != "all") {
+	idx <- idy <- sample(ncol(cormat),n) 
+} else {
+	idx <- idy <- c(1:ncol(cormat))
+}
 
 # Perform KNN mean clustering.
-n <- 1000
-n_rand <- sample(ncol(cormat),n)
 k <- n_clusters
 nstart <- 1
 iter.max <- 10
 alg <- c("Hartigan-Wong", "Lloyd", "Forgy","MacQueen")[1]
 message(paste0("Performing kmeans clustering (k=",n_clusters,
 	      ") using the ",alg," algorithm..."))
-clusters <- kmeans(cormat[n_rand,n_rand], centers=k, iter.max, nstart, algorithm=alg)
+clusters <- kmeans(cormat[idx,idy], centers=k, iter.max, nstart, algorithm=alg)
 
 # Extract clusters.
 partition <- clusters$cluster
-names(partition) <- colnames(cormat)
+names(partition) <- colnames(cormat)[idx]
 
 # Split into list of cell clusters.
 cell_clusters <- split(partition,partition)
 names(cell_clusters) <- paste0("C",names(cell_clusters))
 
 # Save.
-mfyile <- file.path(rdatdir,"Linaerson_Mouse_Brain_Cell_Clusters.RData")
+myfile <- file.path(rdatdir,"Linaerson_Mouse_Brain_Cell_Clusters.RData")
 saveRDS(cell_clusters,myfile)
+
+# Status.
+message("Done!")
