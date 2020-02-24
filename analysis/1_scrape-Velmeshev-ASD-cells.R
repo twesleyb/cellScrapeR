@@ -24,7 +24,6 @@ urls <- list(
 	     json = "https://cells.ucsc.edu/autism/desc.json")
 
 # download the data
-#data <- getData(urls$data) # this is really slow!
 meta <- getMeta(urls$meta)
 json <- getJSON(urls$json)
 
@@ -48,8 +47,8 @@ submeta <- submeta[!out,]
 cell_clusters <- split(submeta$msEntrez,submeta$cluster)
 
 # Write as gmt.
-#myfile <- file.path(datadir,"Velmeshev_Cell_Clusters.gmt")
-#write_gmt(cell_clusters,urls$data,myfile)
+myfile <- file.path(datadir,"Velmeshev_Cell_Clusters.gmt")
+write_gmt(cell_clusters,urls$data,myfile)
 
 # Create anRichment geneSet collection.
 createGeneSet <- function(genes,cluster) {
